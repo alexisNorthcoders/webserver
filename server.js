@@ -9,10 +9,11 @@ let players = {};
 
 app.use(express.json())
 app.use("/snake",express.static(path.join(__dirname, '/public')));
-app.use((req,res,next)=> {
-  console.log(`${req.method} ${req.url} Body: ${JSON.stringify(req.body)}`)
-  next()
-})
+app.use((req, res, next) => {
+  const timestamp = new Date().toISOString();
+  console.log(`[${timestamp}] ${req.method} ${req.url} Body: ${JSON.stringify(req.body)}`);
+  next();
+});
 app.use("/snake",express.static(path.join(__dirname, '../p5')));
 app.use("/zigzag",express.static(path.join(__dirname, '../zigzag-game')));
 
