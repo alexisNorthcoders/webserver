@@ -36,7 +36,7 @@ app.post("/zigzag/score", async (req, res) => {
   }
 });
 
-app.get("/snake/score", async (req, res) => {
+app.get("/zigzag/score", async (req, res) => {
 
   try {
     const scores = await getScore("zigzag_highscore");
