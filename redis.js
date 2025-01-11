@@ -16,7 +16,8 @@ redisClient.on("error", (err) => {
 async function addScore(userId, score) {
   try {
     await redisClient.zAdd(`user:${userId}:scores`, { score: parseInt(score), value: Date.now().toString() });
-    console.log(`Score ${score} added for user ${userId}`);
+    console.log(`Redis: Score ${score} added for user ${userId}`);
+
   } catch (err) {
     console.error("Error adding score to user:", err);
   }
