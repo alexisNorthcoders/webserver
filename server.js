@@ -39,8 +39,11 @@ app.post("/zigzag/score", async (req, res) => {
 app.get("/snake/score", async (req, res) => {
 
   try {
-    const score = await getScore("zigzag_highscore");
-    res.status(200).json(score);
+    const scores = await getScore("zigzag_highscore");
+
+    scores.sort((a, b) => b.score - a.score)
+
+    res.status(200).json(scores[0]);
   } catch (err) {
     res.status(500).json({ err });
   }
