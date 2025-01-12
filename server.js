@@ -17,6 +17,21 @@ app.use((req, res, next) => {
 app.use("/snake", express.static(path.join(__dirname, '../p5')));
 app.use("/zigzag", express.static(path.join(__dirname, '../zigzag-game')));
 
+const allowedOrigin = [
+  "http://raspberrypi.local:7000",
+  "https://alexisraspberry.duckdns.org"
+];
+
+app.post("/zigzag/score", (req, res, next) => {
+  const origin = req.headers.origin || req.headers.referer;
+
+  if (!origin || !allowedOrigin.some(allowed => origin.startsWith(allowed))) {
+    return res.status(403).json({ error: "Invalid origin or referer" });
+  }
+
+  next();
+});
+
 app.post("/zigzag/score", async (req, res) => {
 
   const { score } = req.body;
@@ -41,9 +56,9 @@ app.get("/zigzag/score", async (req, res) => {
   try {
     const scores = await getScore("zigzag_highscore");
 
-    scores.sort((a, b) => b.score - a.score)
+    const last10Scores = scores.slice(-10);
 
-    res.status(200).json(scores[0]);
+    res.status(200).json(last10Scores);
   } catch (err) {
     res.status(500).json({ err });
   }
