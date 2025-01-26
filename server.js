@@ -10,12 +10,28 @@ let players = {};
 app.use(express.json())
 app.use("/snake", express.static(path.join(__dirname, '/public')));
 app.use((req, res, next) => {
-  const timestamp = new Date().toISOString();
-  console.log(`[${timestamp}] ${req.method} ${req.url} Body: ${JSON.stringify(req.body)}`);
+  const timestamp = new Date().toLocaleString();
+  const { method, url } = req
+
+  console.log(`[${timestamp}] | ${method} | ${url} | user-agent: ${JSON.stringify(req.headers['user-agent'])} | Body: ${JSON.stringify(req.body)}`);
   next();
 });
 app.use("/snake", express.static(path.join(__dirname, '../p5')));
 app.use("/zigzag", express.static(path.join(__dirname, '../zigzag-game')));
+app.use(
+  "/kings-and-pigs",
+  express.static(path.join(__dirname, '../Platformer-Game'), {
+    setHeaders: (res, filePath) => {
+      if (filePath.endsWith('.html')) {
+        
+        res.setHeader('Cache-Control', 'no-cache, must-revalidate');
+      } else {
+        
+        res.setHeader('Cache-Control', 'public, max-age=604800');
+      }
+    }
+  })
+);
 
 const allowedOrigin = [
   "http://raspberrypi.local:7000",
@@ -43,7 +59,7 @@ app.post("/zigzag/score", async (req, res) => {
   try {
     await addScore('zigzag_highscore', score);
     const timestamp = new Date().toISOString();
-    console.log(`[${timestamp}] RES { message: Highscore added: ${score}`);
+    console.log(`[${timestamp}]RES { message: Highscore added: ${score}`);
     res.status(201).json({ message: `Highscore added: ${score}` });
   } catch (err) {
 
