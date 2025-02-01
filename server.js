@@ -7,6 +7,8 @@ const { systemInfo } = require('./models')
 
 let players = {};
 
+const ALLOWED_IPS = ["127.0.0.1", "::1"]; 
+
 // only localhost middleware
 const localhostOnly = (req, res, next) => {
   const ip = req.socket.remoteAddress;
