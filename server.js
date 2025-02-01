@@ -7,6 +7,15 @@ const { systemInfo } = require('./models')
 
 let players = {};
 
+// only localhost middleware
+const localhostOnly = (req, res, next) => {
+  const ip = req.socket.remoteAddress;
+  if (!ALLOWED_IPS.includes(ip)) {
+    return res.status(403).json({ error: "Access denied" });
+  }
+  next();
+};
+
 
 app.use(express.json())
 app.use("/snake", express.static(path.join(__dirname, '/public')));
@@ -34,7 +43,7 @@ app.use(
   })
 );
 
-app.post("/system-info", (req, res) => {
+app.post("/system-info", localhostOnly, (req, res) => {
   const { temperature, cpuUsage, memoryUsage, diskUsage, diskActivity } = req.body;
 
   if (!temperature || !cpuUsage || !memoryUsage || !diskUsage || !diskActivity) {
