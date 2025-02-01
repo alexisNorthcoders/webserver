@@ -7,11 +7,12 @@ const { systemInfo } = require('./models')
 
 let players = {};
 
-const ALLOWED_IPS = ["127.0.0.1", "::1"]; 
+const ALLOWED_IPS = ["::ffff:192.168.4.42", "::1"];
 
 // only localhost middleware
 const localhostOnly = (req, res, next) => {
   const ip = req.socket.remoteAddress;
+
   if (!ALLOWED_IPS.includes(ip)) {
     return res.status(403).json({ error: "Access denied" });
   }
@@ -30,6 +31,7 @@ app.use((req, res, next) => {
 });
 app.use("/snake", express.static(path.join(__dirname, '../p5')));
 app.use("/zigzag", express.static(path.join(__dirname, '../zigzag-game')));
+app.use("/monitor-canvas", express.static(path.join(__dirname, '../monitor-canvas')));
 app.use(
   "/kings-and-pigs",
   express.static(path.join(__dirname, '../Platformer-Game'), {
@@ -56,6 +58,7 @@ app.post("/system-info", localhostOnly, (req, res) => {
     if (err) {
       return res.status(500).json({ error: "Failed to insert record" });
     }
+
     res.status(201).json({ message: "Record added successfully", recordId: id });
   });
 });
@@ -66,6 +69,29 @@ app.get("/system-info", (req, res) => {
       return res.status(500).json({ error: "Failed to retrieve records" });
     }
     res.json(records);
+  });
+});
+
+app.get('/system-info/sse', (req, res) => {
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+
+  function sendData() {
+    systemInfo.getLast20Records((err, records) => {
+      if (err) {
+        return res.status(500).json({ error: "Failed to retrieve records" });
+      }
+      res.write(`data: ${JSON.stringify(records)}\n\n`);
+    });
+  }
+
+  sendData();
+
+  const interval = setInterval(sendData, 60000);
+
+  req.on('close', () => {
+    clearInterval(interval);
   });
 });
 
