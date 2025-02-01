@@ -77,6 +77,8 @@ app.get('/system-info/sse', (req, res) => {
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
 
+  console.log("🔗 New client connected!");
+
   function sendData() {
     systemInfo.getLast20Records((err, records) => {
       if (err) {
@@ -91,8 +93,10 @@ app.get('/system-info/sse', (req, res) => {
   const interval = setInterval(sendData, 60000);
 
   req.on('close', () => {
+    console.log("❌ Client disconnected, stopping data stream.");
     clearInterval(interval);
-  });
+    res.end();
+});
 });
 
 
