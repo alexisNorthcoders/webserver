@@ -1,11 +1,12 @@
 const express = require('express')
 const path = require('path');
 const { getScore, addScore } = require('./redis');
-
 const app = express()
+const { systemInfo } = require('./models')
 
 
 let players = {};
+
 
 app.use(express.json())
 app.use("/snake", express.static(path.join(__dirname, '/public')));
@@ -23,15 +24,40 @@ app.use(
   express.static(path.join(__dirname, '../Platformer-Game'), {
     setHeaders: (res, filePath) => {
       if (filePath.endsWith('.html')) {
-        
+
         res.setHeader('Cache-Control', 'no-cache, must-revalidate');
       } else {
-        
+
         res.setHeader('Cache-Control', 'public, max-age=604800');
       }
     }
   })
 );
+
+app.post("/system-info", (req, res) => {
+  const { temperature, cpuUsage, memoryUsage, diskUsage, diskActivity } = req.body;
+
+  if (!temperature || !cpuUsage || !memoryUsage || !diskUsage || !diskActivity) {
+    return res.status(400).json({ error: "Missing required fields" });
+  }
+
+  systemInfo.addRecord(temperature, cpuUsage, memoryUsage, diskUsage, diskActivity, (err, id) => {
+    if (err) {
+      return res.status(500).json({ error: "Failed to insert record" });
+    }
+    res.status(201).json({ message: "Record added successfully", recordId: id });
+  });
+});
+
+app.get("/system-info", (req, res) => {
+  systemInfo.getLast20Records((err, records) => {
+    if (err) {
+      return res.status(500).json({ error: "Failed to retrieve records" });
+    }
+    res.json(records);
+  });
+});
+
 
 const allowedOrigin = [
   "http://raspberrypi.local:7000",
