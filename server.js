@@ -3,6 +3,7 @@ const path = require('path');
 const { getScore, addScore } = require('./redis');
 const app = express()
 const { systemInfo } = require('./models')
+const Logger = require('./logger')
 
 
 let players = {};
@@ -21,14 +22,9 @@ const localhostOnly = (req, res, next) => {
 
 
 app.use(express.json())
+app.use(Logger.logRequest);
 app.use("/snake", express.static(path.join(__dirname, '/public')));
-app.use((req, res, next) => {
-  const timestamp = new Date().toLocaleString();
-  const { method, url } = req
 
-  console.log(`[${timestamp}] | ${method} | ${url} | user-agent: ${JSON.stringify(req.headers['user-agent'])} | Body: ${JSON.stringify(req.body)}`);
-  next();
-});
 app.use("/snake", express.static(path.join(__dirname, '../p5')));
 app.use("/zigzag", express.static(path.join(__dirname, '../zigzag-game')));
 app.use("/monitor-canvas", express.static(path.join(__dirname, '../monitor-canvas')));
@@ -73,14 +69,15 @@ app.get("/system-info", (req, res) => {
 });
 
 app.get('/system-info/sse', (req, res) => {
+  const { limit = 60 } = req.body?.limit || {};
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
 
-  console.log("🔗 New client connected!");
+  Logger.logMessage("System-info: 🔗 New client connected!")
 
   function sendData() {
-    systemInfo.getLast20Records((err, records) => {
+    systemInfo.getLastRecords(limit, (err, records) => {
       if (err) {
         return res.status(500).json({ error: "Failed to retrieve records" });
       }
@@ -93,10 +90,10 @@ app.get('/system-info/sse', (req, res) => {
   const interval = setInterval(sendData, 60000);
 
   req.on('close', () => {
-    console.log("❌ Client disconnected, stopping data stream.");
+    Logger.logMessage("System-info: ❌ Client disconnected, stopping data stream.")
     clearInterval(interval);
     res.end();
-});
+  });
 });
 
 
@@ -126,7 +123,9 @@ app.post("/zigzag/score", async (req, res) => {
   try {
     await addScore('zigzag_highscore', score);
     const timestamp = new Date().toISOString();
-    console.log(`[${timestamp}]RES { message: Highscore added: ${score}`);
+
+    Logger.logMessage(`Zigzag Game: Highscore added: ${score}`)
+
     res.status(201).json({ message: `Highscore added: ${score}` });
   } catch (err) {
 

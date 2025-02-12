@@ -1,5 +1,6 @@
 const sqlite3 = require("sqlite3").verbose();
 const db = new sqlite3.Database("../clipboard/DB/database.sqlite");
+const Logger = require('./logger')
 
 class SystemInfo {
     addRecord(temperature, cpuUsage, memoryUsage, diskUsage, diskActivity, callback) {
@@ -24,19 +25,34 @@ class SystemInfo {
                 console.error('Error inserting record:', err);
                 callback(err);
             } else {
-                console.log(`Record inserted with ID: ${this.lastID}`);
+
+                Logger.logMessage(`Database: system_info | Record inserted with ID: ${this.lastID}`)
                 callback(null, this.lastID);
             }
         });
     }
-    getLast20Records(callback) {
+    getLastRecords(limit, callback) {
         const query = `
             SELECT * FROM system_info
             ORDER BY timestamp DESC
-            LIMIT 20`;
+            LIMIT ${limit}`;
         db.all(query, [], (err, rows) => {
             if (err) {
-                console.error('Error retrieving records:', err);
+                Logger.logMessage(`Database: system_info | Error retrieving records: ${JSON.stringify(err)}`)
+                callback(err);
+            } else {
+                callback(null, rows);
+            }
+        });
+    }
+    getLast100Records(callback) {
+        const query = `
+            SELECT * FROM system_info
+            ORDER BY timestamp DESC
+            LIMIT 100`;
+        db.all(query, [], (err, rows) => {
+            if (err) {
+                Logger.logMessage(`Database: system_info | Error retrieving records: ${JSON.stringify(err)}`)
                 callback(err);
             } else {
                 callback(null, rows);
