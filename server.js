@@ -1,9 +1,13 @@
 const express = require('express')
 const path = require('path');
+const swaggerUi = require('swagger-ui-express');
+const YAML = require('yamljs');
 const { getScore, addScore } = require('./redis');
 const app = express()
 const { systemInfo } = require('./models')
 const Logger = require('./logger')
+
+const swaggerDocument = YAML.load('./swagger.yaml');
 
 
 let players = {};
@@ -22,6 +26,7 @@ const localhostOnly = (req, res, next) => {
 
 
 app.use(express.json())
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 app.use(Logger.logRequest);
 app.use("/snake", express.static(path.join(__dirname, '/public')));
 
@@ -59,8 +64,11 @@ app.post("/system-info", localhostOnly, (req, res) => {
   });
 });
 
-app.get("/system-info", (req, res) => {
-  systemInfo.getLast20Records((err, records) => {
+app.get("/system-info/:limit", (req, res) => {
+
+  const limit = parseInt(req.params.limit) || 10;
+
+  systemInfo.getLastRecords(limit, (err, records) => {
     if (err) {
       return res.status(500).json({ error: "Failed to retrieve records" });
     }
