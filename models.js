@@ -60,7 +60,43 @@ class SystemInfo {
         });
     }
 }
+class AmazonPriceTracker {
+    addPriceRecord(url, title, price, timestamp, callback) {
+        const query = `
+            INSERT INTO amazon_prices (url, title, price, timestamp)
+            VALUES (?, ?, ?, ?)
+        `;
+        db.run(query, [url, title, price, timestamp], function (err) {
+            if (err) {
+                Logger.logMessage(`Database: amazon_prices | Error inserting record: ${JSON.stringify(err)}`);
+                callback(err);
+            } else {
+                Logger.logMessage(`Database: amazon_prices | Record inserted with ID: ${this.lastID}`);
+                callback(null, this.lastID);
+            }
+        });
+    }
+
+    async getLastPrice(url, callback) {
+        const query = `
+            SELECT price FROM amazon_prices
+            WHERE url = ?
+            ORDER BY timestamp DESC
+            LIMIT 1
+        `;
+        db.get(query, [url], (err, row) => {
+            if (err) {
+                Logger.logMessage(`Database: amazon_prices | Error fetching last price: ${JSON.stringify(err)}`);
+                callback(err);
+            } else {
+                callback(null, row ? row.price : null);
+            }
+        });
+    }
+}
+
 
 module.exports = {
-    systemInfo: new SystemInfo()
+    systemInfo: new SystemInfo(),
+    amazonPriceTracker: new AmazonPriceTracker()
 };
