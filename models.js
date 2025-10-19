@@ -35,12 +35,13 @@ class SystemInfo {
         const query = `
             SELECT * FROM system_info
             ORDER BY timestamp DESC
-            LIMIT ${limit}`;
-        db.all(query, [], (err, rows) => {
+            LIMIT ?`;
+        db.all(query, [limit], (err, rows) => {
             if (err) {
                 Logger.logMessage(`Database: system_info | Error retrieving records: ${JSON.stringify(err)}`)
                 callback(err);
             } else {
+                Logger.logMessage(`Database: system_info | Retrieved ${rows.length} records with limit ${limit}`);
                 callback(null, rows);
             }
         });

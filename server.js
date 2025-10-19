@@ -26,12 +26,14 @@ const localhostOnly = (req, res, next) => {
 app.use(express.json())
 app.use(Logger.logRequest);
 app.get('/system-info/sse', (req, res) => {
-  const { limit = 60 } = req.body?.limit || {};
+  // Get limit from query parameter, allow up to 10080 data points (1 week)
+  const limit = Math.min(parseInt(req.query.limit) || 60, 10080); // Max 1 week of data
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
+  res.setHeader('Access-Control-Allow-Origin', '*');
 
-  Logger.logMessage("System-info: 🔗 New client connected!")
+  Logger.logMessage(`System-info: 🔗 New client connected! Requesting ${limit} data points (query limit: ${req.query.limit})`)
 
   function sendData() {
     systemInfo.getLastRecords(limit, (err, records) => {
@@ -39,13 +41,15 @@ app.get('/system-info/sse', (req, res) => {
         res.write(`event: error\ndata: ${JSON.stringify({ error: "Failed to retrieve records" })}\n\n`);
         return
       }
+      Logger.logMessage(`System-info: 📊 Sending ${records.length} records to client`);
       res.write(`data: ${JSON.stringify(records)}\n\n`);
     });
   }
 
   sendData();
 
-  const interval = setInterval(sendData, 60000);
+  // Update every minute to match data collection
+  const interval = setInterval(sendData, 60000); // Every minute
 
   req.on('close', () => {
     Logger.logMessage("System-info: ❌ Client disconnected, stopping data stream.")
@@ -123,8 +127,7 @@ app.post("/system-info", localhostOnly, (req, res) => {
 });
 
 app.get("/system-info/:limit", (req, res) => {
-
-  const limit = parseInt(req.params.limit) || 10;
+  const limit = Math.min(parseInt(req.params.limit) || 60, 10080); // Max 1 week of data
 
   systemInfo.getLastRecords(limit, (err, records) => {
     if (err) {
