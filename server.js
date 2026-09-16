@@ -6,9 +6,9 @@ const Logger = require('./logger')
 
 app.use(express.json())
 app.use(Logger.logRequest);
-app.use("/snake", express.static(path.join(__dirname, '/public')));
+app.use("/", express.static(path.join(__dirname, '/public')));
 
-app.use("/snake", express.static(path.join(__dirname, '../p5')));
+app.use("/", express.static(path.join(__dirname, '../snake-phaser/dist')));
 
 app.get("/snake/score/:userId", async (req, res) => {
   const { userId } = req.params;
@@ -35,4 +35,5 @@ app.post("/snake/score/:userId", async (req, res) => {
     res.status(500).json({ error: "Error adding score" });
   }
 });
+
 module.exports = { app }
